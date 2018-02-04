@@ -1,5 +1,5 @@
 /**
- *  Fronius Solar Inverter
+ *  Fronius Solar Inverter & Smart Meter
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -15,10 +15,10 @@
 // import groovy.json.JsonSlurper
 
 preferences {
-	input("inverterNumber", "number", title: "Inverter Number", description: "The Inverter Number", required: true, displayDuringSetup: true)
+	input("MeterNumber", "number", title: "Smart Meter Number", description: "The Smart Meter Number", required: false, displayDuringSetup: true)
     input("destIp", "text", title: "IP", description: "Inverter Local IP Address", required: true, displayDuringSetup: true)
     input("destPort", "number", title: "Port", description: "TCP Port", required: true, displayDuringSetup: true)
-    input("pollingInterval", "number", title:"Polling Interval (min)", defaultValue:"5", range: "2..59", required: true, displayDuringSetup: true)
+    // input("solarMax", "number", title: "Solar System Size", description: "in Watts (5kw = 5000)", required: true, displayDuringSetup: true)
 }
 
 metadata {
@@ -40,36 +40,58 @@ metadata {
             tileAttribute("device.solar_power", key: "PRIMARY_CONTROL") {
                 attributeState "power", label:'${currentValue}W', icon: "st.Weather.weather14", defaultState: true, backgroundColors:[
                     [value: 0, color: "	#cccccc"],
-                    [value: 5500, color: "#00a0dc"]
+                    [value: 5000, color: "#00a0dc"]
                 ]
             }
             tileAttribute("device.power_details", key: "SECONDARY_CONTROL") {
                 attributeState("power_details", label:'${currentValue}', icon: "st.Appliances.appliances17", defaultState: true)
             }
-        }        
+        }
         
-        valueTile("YearValue", "device.YearValue", width: 2, height: 2, inactiveLabel: false) {
-			state "YearValue", label:'${currentValue}'
-		}
-        valueTile("TotalValue", "device.TotalValue", width: 2, height: 2, inactiveLabel: false) {
-			state "TotalValue", label:'${currentValue}'
-		}
-
-		standardTile("HouseUsage", "HouseUsage", width: 4, height: 1) {
+		standardTile("HouseUsage", "HouseUsage", width: 2, height: 2, inactiveLabel: false) {
 			state "default", label: "House Usage"
 		}
-		valueTile("HousePower", "device.house_power", width: 2, height: 1, inactiveLabel: false) {
-			state "HousePower", label:'${currentValue}'
+		valueTile("HousePower", "device.house_power", width: 2, height: 2, inactiveLabel: false) {
+			state "house_power", label:'${currentValue}W'
+		}
+		valueTile("HouseMeter", "device.usage_meter", width: 2, height: 2, inactiveLabel: false) {
+			state "usage_meter", label:'${currentValue}'
 		}
         
-        standardTile("GridPower", "GridPower", width: 4, height: 1) {
+		standardTile("SolarUsage", "SolarUsage", width: 2, height: 2, inactiveLabel: false) {
+			state "default", label: "Solar Usage"
+		}
+		valueTile("SolarUsageNow", "device.s_usage", width: 2, height: 2, inactiveLabel: false) {
+			state "solar_power", label:'${currentValue}W'
+		}
+		valueTile("SolarMeter", "device.s_usage_meter", width: 2, height: 2, inactiveLabel: false) {
+			state "Solar_usage_meter", label:'${currentValue}'
+		}
+        
+        standardTile("GridPower", "GridPower", width: 2, height: 2, inactiveLabel: false) {
 			state "default", label: "Grid Power"
 		}
         
-        valueTile("Grid", "device.grid", width: 2, height: 1, inactiveLabel: false) {
-			state "Grid", label:'${currentValue}'
+        valueTile("Grid", "device.grid", width: 2, height: 2, inactiveLabel: false) {
+			state "Grid", label:'${currentValue}W'
 		}
         
+        valueTile("Grid_Imported", "device.imported", width: 2, height: 2, inactiveLabel: false) {
+			state "Grid_Imported", label:'${currentValue}'
+		}
+
+		valueTile("Grid_Exported", "device.exported", width: 2, height: 2, inactiveLabel: false) {
+			state "Grid_Exported", label:'${currentValue}'
+		}
+        
+		valueTile("autonomy", "device.autonomy", width: 2, height: 2, inactiveLabel: false) {
+			state "autonomy", label:'${currentValue}'
+		}
+        
+		valueTile("self_consumption", "device.self_consumption", width: 2, height: 2, inactiveLabel: false) {
+			state "self_consumption", label:'${currentValue}'
+		}
+
         valueTile("solar2", "device.solar_power", decoration: "flat", inactiveLabel: false) {
 			state "solar", label:'${currentValue}', icon: "st.Weather.weather14",
             	backgroundColors:[
@@ -83,18 +105,24 @@ metadata {
 		}
         
         main(["solar2"])
-		details(["solar", "HouseUsage", "HousePower", "GridPower", "Grid", "poll"])
+		details(["solar", "HouseUsage", "HousePower", "HouseMeter", "SolarUsage", "SolarUsageNow", "SolarMeter", "GridPower", "Grid", "Grid_Imported", "Grid_Exported", "autonomy", "self_consumption", "poll"])
 	}
 }
 
 def initialize() {
 	log.info "Fronius Inverter ${textVersion()}"
     sendEvent(name: "solar_power", value: 0	)
-    sendEvent(name: "YearValue", value: 0 )
     sendEvent(name: "energy", value: 0 )
-    sendEvent(name: "TotalValue", value: 0 )
     sendEvent(name: "house_power", value: 0 )
     sendEvent(name: "grid", value: 0 )
+    sendEvent(name: "YearValue", value: 0 )
+    sendEvent(name: "TotalValue", value: 0 )
+    sendEvent(name: "autonomy", value: 0 )
+    sendEvent(name: "self_consumed", value: 0 )
+	state.pgrid = 0
+	state.etotal = 0
+    state.ppv = 0
+    
 	poll()
 }
 
@@ -108,20 +136,98 @@ def parse(String description) {
     log.info "JSON: $result"
     if (result.Head.RequestArguments.DeviceClass == "Meter") {
 		// Parse Data From Smart Meter
+        
+        //Restore state stored values form Inverter Run
+        def P_Grid = state.pgrid
+        def P_PV = state.ppv
+        def E_Total = state.etotal
+        
+        def fromgrid = 0
+		def grid_consumed = result.Body.Data."$MeterNumber".EnergyReal_WAC_Sum_Consumed
+		def togrid = 0
+		def grid_produced = result.Body.Data."$MeterNumber".EnergyReal_WAC_Sum_Produced
+        if (P_Grid > 0) {
+            fromgrid = P_Grid
+        } else if (P_Grid < 0) {
+            togrid = 0 - P_Grid
+        }
+        
+  		// Import and Export Meters
+        def imported = grid_consumed
+        def imported_unit = "Wh"
+        if (imported < 1000000) {
+        	imported = (imported/1000)
+            imported_unit = "kWh"
+        } else {
+        	imported = (imported/1000000)
+            imported_unit = "MWh"
+        }
+        imported = (Math.round(imported * 100))/100
+        
+		// Import and Export Meters
+        def exported = grid_produced
+        def exported_unit = "Wh"
+        if (exported < 1000000) {
+        	exported = (exported/1000)
+            exported_unit = "kWh"
+        } else {
+        	exported = (exported/1000000)
+            exported_unit = "MWh"
+        }
+        exported = (Math.round(exported * 100))/100
+
+        // Consumption = Generation + Import - Export
+		def usage_meter = E_Total + grid_consumed - grid_produced
+        def usage_meter_unit = "Wh"
+        if (usage_meter < 1000000) {
+        	usage_meter = (usage_meter/1000)
+            usage_meter_unit = "kWh"
+        } else {
+        	usage_meter = (usage_meter/1000000)
+            usage_meter_unit = "MWh"
+        }
+        usage_meter = (Math.round(usage_meter * 100))/100
+        
+        // Self Consumption = Generation - Export (now and total meter)
+		def SUsage = Math.round(P_PV - togrid)
+        def SUsage_unit = "W"
+		def SUsage_meter = E_Total - grid_produced
+        def SUsage_meter_unit = "Wh"
+        if (SUsage_meter < 1000000) {
+        	SUsage_meter = (SUsage_meter/1000)
+            SUsage_meter_unit = "kWh"
+        } else {
+        	SUsage_meter = (SUsage_meter/1000000)
+            SUsage_meter_unit = "MWh"
+        }
+        SUsage_meter = (Math.round(SUsage_meter * 100))/100
+   
+        sendEvent(name: "usage_meter", value: "${usage_meter}${usage_meter_unit}", unit:usage_meter_unit )
+        sendEvent(name: "imported", value: "${imported}${imported_unit}", unit:imported_unit )
+        sendEvent(name: "exported", value: "${exported}${exported_unit}", unit:exported_unit )
+		sendEvent(name: "s_usage", value: "${SUsage}", unit:SUsage_unit )
+		sendEvent(name: "s_usage_meter", value: "${SUsage_meter}${SUsage_meter_unit}", unit:SUsage_meter_unit )
+        
     } else {
     	// Parse Data From Inverter
-        def P_Grid = Math.round(result.Body.Data.Site.P_Grid);
+        // Grid Power +Value = Importing -Value = Exporting
+        def P_Grid = Math.round(result.Body.Data.Site.P_Grid)
+        state.pgrid = result.Body.Data.Site.P_Grid
         def P_Grid_unit = "W"
         
-        def P_Load = Math.round((0 - result.Body.Data.Site.P_Load));
+        // House Power Usage (Raw is Neg Value)
+        def P_Load = Math.round((0 - result.Body.Data.Site.P_Load))
         def P_Load_unit = "W"
         
+        // Current Solar Production
         def P_PV = 0
         def P_PV_unit = "W"
         if (result.Body.Data.Site.P_PV != null) {
             P_PV = result.Body.Data.Site.P_PV
 		}
+        state.ppv = P_PV
 
+		// Daily Production Value (Current FW Issue means this value is often wrong)
 		def E_Day = result.Body.Data.Site.E_Day
         def E_Day_unit = "Wh"
         if (E_Day < 1000000) {
@@ -132,7 +238,8 @@ def parse(String description) {
             E_Day_unit = "MWh"
         }
         E_Day = (Math.round(E_Day * 100))/100
-        
+    
+        // Yearly Solar Production Value
         def E_Year = result.Body.Data.Site.E_Year
         def E_Year_unit = "Wh"
         if (E_Year < 1000000) {
@@ -144,7 +251,9 @@ def parse(String description) {
         }
         E_Year = (Math.round(E_Year * 100))/100
 
+		// Total Solar Production Value
         def E_Total = result.Body.Data.Site.E_Total
+        state.etotal = E_Total
         def E_Total_unit = "Wh"
         if (E_Total < 1000000) {
         	E_Total = (E_Total/1000)
@@ -155,11 +264,12 @@ def parse(String description) {
         }
         E_Total = (Math.round(E_Total * 100))/100
         
-        log.debug "Now: $P_PV $P_PV_unit"
-		log.debug "Day: $E_Day $E_Day_unit"
-        log.debug "Year: $E_Year $E_Year_unit"
-        log.debug "Total: $E_Total $E_Total_unit"
-    
+        // Current Autonomy (Percentage) 100% = No Grid Power
+		def Autonomy = (Math.round(result.Body.Data.Site.rel_Autonomy * 10))/10
+        
+        // Current Self Consuption (Percentage)
+		def Self_Consumption = (Math.round(result.Body.Data.Site.rel_SelfConsumption * 10))/10
+        
 /*
 		[name: "solar_power", value: Math.round(P_PV), unit: "W"]
         [name: "energy", value: (E_Day/1000), unit: "kWh"]
@@ -169,10 +279,12 @@ def parse(String description) {
 
         sendEvent(name: "solar_power", value: "${P_PV}", unit:P_PV_unit )
         sendEvent(name: "energy", value: "${E_Day}${E_Day_unit}", unit:E_Year_unit )
-        sendEvent(name: "house_power", value: "${P_Load}${P_Load_unit}", unit:P_Load_unit )
-        sendEvent(name: "grid", value: "${P_Grid}${P_Grid_unit}", unit:P_Grid_unit )
+        sendEvent(name: "house_power", value: "${P_Load}", unit:P_Load_unit )
+        sendEvent(name: "grid", value: "${P_Grid}", unit:P_Grid_unit )
         sendEvent(name: "YearValue", value: "${E_Year}${E_Year_unit}", unit:E_Year_unit )
         sendEvent(name: "TotalValue", value: "${E_Total}${E_Total_unit}", unit:E_Total_unit )
+        sendEvent(name: "autonomy", value: "${Autonomy}%", unit:"" )
+		sendEvent(name: "self_consumption", value: "${Self_Consumption}%", unit:"" )
         sendEvent(name: 'power_details', value: "Today: ${E_Day}${E_Day_unit}\nYear: ${E_Year}${E_Year_unit} Total: ${E_Total}${E_Total_unit}", unit:E_Year_unit, displayed: false )
     }
 }
