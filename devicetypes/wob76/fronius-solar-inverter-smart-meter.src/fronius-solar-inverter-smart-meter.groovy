@@ -48,48 +48,48 @@ metadata {
             }
         }
         
-		standardTile("HouseUsage", "HouseUsage", width: 2, height: 2, inactiveLabel: false) {
-			state "default", label: "House Usage"
+		standardTile("HouseUsage", "HouseUsage", width: 2, height: 1, inactiveLabel: false) {
+			state "default", label: "House Load"
 		}
-		valueTile("HousePower", "device.house_power", width: 2, height: 2, inactiveLabel: false) {
+		valueTile("HousePower", "device.house_power", width: 2, height: 1, inactiveLabel: false) {
 			state "house_power", label:'${currentValue}W'
 		}
-		valueTile("HouseMeter", "device.usage_meter", width: 2, height: 2, inactiveLabel: false) {
+		valueTile("HouseMeter", "device.usage_meter", width: 2, height: 1, inactiveLabel: false) {
 			state "usage_meter", label:'${currentValue}'
 		}
         
-		standardTile("SolarUsage", "SolarUsage", width: 2, height: 2, inactiveLabel: false) {
+		standardTile("SolarUsage", "SolarUsage", width: 2, height: 1, inactiveLabel: false) {
 			state "default", label: "Solar Usage"
 		}
-		valueTile("SolarUsageNow", "device.s_usage", width: 2, height: 2, inactiveLabel: false) {
+		valueTile("SolarUsageNow", "device.s_usage", width: 2, height: 1, inactiveLabel: false) {
 			state "solar_power", label:'${currentValue}W'
 		}
-		valueTile("SolarMeter", "device.s_usage_meter", width: 2, height: 2, inactiveLabel: false) {
+		valueTile("SolarMeter", "device.s_usage_meter", width: 2, height: 1, inactiveLabel: false) {
 			state "Solar_usage_meter", label:'${currentValue}'
 		}
         
-        standardTile("GridPower", "GridPower", width: 2, height: 2, inactiveLabel: false) {
-			state "default", label: "Grid Power"
+        standardTile("GridPower", "GridPower", width: 2, height: 1, inactiveLabel: false) {
+			state "default", label: "Grid Usage"
 		}
         
-        valueTile("Grid", "device.grid", width: 2, height: 2, inactiveLabel: false) {
+        valueTile("Grid", "device.grid", width: 2, height: 1, inactiveLabel: false) {
 			state "Grid", label:'${currentValue}W'
 		}
         
-        valueTile("Grid_Imported", "device.imported", width: 2, height: 2, inactiveLabel: false) {
-			state "Grid_Imported", label:'${currentValue}'
+        valueTile("Grid_Imported", "device.imported", width: 1, height: 1, inactiveLabel: false) {
+			state "Grid_Imported", label:'import\n${currentValue}'
 		}
 
-		valueTile("Grid_Exported", "device.exported", width: 2, height: 2, inactiveLabel: false) {
-			state "Grid_Exported", label:'${currentValue}'
+		valueTile("Grid_Exported", "device.exported", width: 1, height: 1, inactiveLabel: false) {
+			state "Grid_Exported", label:'export\n${currentValue}'
 		}
         
-		valueTile("autonomy", "device.autonomy", width: 2, height: 2, inactiveLabel: false) {
-			state "autonomy", label:'${currentValue}'
+		valueTile("autonomy", "device.autonomy", width: 2, height:1 , inactiveLabel: false) {
+			state "autonomy", label:'Autonomy\n${currentValue}'
 		}
         
-		valueTile("self_consumption", "device.self_consumption", width: 2, height: 2, inactiveLabel: false) {
-			state "self_consumption", label:'${currentValue}'
+		valueTile("self_consumption", "device.self_consumption", width: 2, height:1 , inactiveLabel: false) {
+			state "self_consumption", label:'Self Consumption\n${currentValue}'
 		}
 
         valueTile("solar2", "device.solar_power", decoration: "flat", inactiveLabel: false) {
@@ -100,7 +100,7 @@ metadata {
                 ]
 		}
         
-		standardTile("poll", "device.poll", width: 2, height: 2, canChangeIcon: false, inactiveLabel: true, canChangeBackground: false, decoration: "flat") {
+		standardTile("poll", "device.poll", width: 2, height:1 , canChangeIcon: false, inactiveLabel: true, canChangeBackground: false, decoration: "flat") {
 			state "poll", label: "", action: "polling.poll", icon: "st.secondary.refresh", backgroundColor: "#FFFFFF"
 		}
         
@@ -285,7 +285,7 @@ def parse(String description) {
         sendEvent(name: "TotalValue", value: "${E_Total}${E_Total_unit}", unit:E_Total_unit )
         sendEvent(name: "autonomy", value: "${Autonomy}%", unit:"" )
 		sendEvent(name: "self_consumption", value: "${Self_Consumption}%", unit:"" )
-        sendEvent(name: 'power_details', value: "Today: ${E_Day}${E_Day_unit}\nYear: ${E_Year}${E_Year_unit} Total: ${E_Total}${E_Total_unit}", unit:E_Year_unit, displayed: false )
+        sendEvent(name: 'power_details', value: "Today: ${E_Day}${E_Day_unit}\nYear: ${E_Year}${E_Year_unit}, Total: ${E_Total}${E_Total_unit}", unit:E_Year_unit, displayed: false )
     }
 }
 
