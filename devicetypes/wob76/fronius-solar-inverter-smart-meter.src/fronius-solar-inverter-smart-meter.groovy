@@ -1,6 +1,8 @@
 /**
  *  Fronius Solar Inverter & Smart Meter
  *
+ *  Copyright 2018 Beau Dwyer
+ *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
@@ -11,8 +13,6 @@
  *  for the specific language governing permissions and limitations under the License.
  * 
  */
- 
-// import groovy.json.JsonSlurper
 
 preferences {
 	input("MeterNumber", "number", title: "Smart Meter Number", description: "The Smart Meter Number", required: false, displayDuringSetup: true)
@@ -137,7 +137,7 @@ def parse(String description) {
     if (result.Head.RequestArguments.DeviceClass == "Meter") {
 		// Parse Data From Smart Meter
         
-        //Restore state stored values form Inverter Run
+        //Restore states stored values form Inverter Run
         def P_Grid = state.pgrid
         def P_PV = state.ppv
         def E_Total = state.etotal
@@ -152,7 +152,7 @@ def parse(String description) {
             togrid = 0 - P_Grid
         }
         
-  		// Import and Export Meters
+  		// Import Meter
         def imported = grid_consumed
         def imported_unit = "Wh"
         if (imported < 1000000) {
@@ -164,7 +164,7 @@ def parse(String description) {
         }
         imported = (Math.round(imported * 100))/100
         
-		// Import and Export Meters
+		// Export Meter
         def exported = grid_produced
         def exported_unit = "Wh"
         if (exported < 1000000) {
