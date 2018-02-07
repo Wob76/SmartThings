@@ -54,9 +54,9 @@ metadata {
         multiAttributeTile(name:"grid", type:"generic", width:6, height:4) {
             tileAttribute("device.grid", key: "PRIMARY_CONTROL") {
                 attributeState "Grid", label:'Grid: ${currentValue}W', icon: "st.Home.home15", defaultState: true, backgroundColors:[
-                	[value: -4000, color: "	#44b621"],
+                	[value: -2000, color: "	#44b621"],
                     [value: 0, color: "	#cccccc"],
-                    [value: 4000, color: "#e86d13"]
+                    [value: 2000, color: "#e86d13"]
                 ]
             }
             tileAttribute("device.grid_details", key: "SECONDARY_CONTROL") {
@@ -266,10 +266,16 @@ def parse(String description) {
         E_Total = (Math.round(E_Total * 100))/100
         
         // Current Autonomy (Percentage) 100% = No Grid Power
-		def Autonomy = (Math.round(result.Body.Data.Site.rel_Autonomy * 10))/10
+		def Autonomy = 0
+        if (result.Body.Data.Site.rel_Autonomy != null) {
+        	Autonomy = (Math.round(result.Body.Data.Site.rel_Autonomy * 10))/10
+        }
         
         // Current Self Consuption (Percentage)
-		def Self_Consumption = (Math.round(result.Body.Data.Site.rel_SelfConsumption * 10))/10
+        def Self_Consumption = 0
+        if (result.Body.Data.Site.rel_SelfConsumption != null) {
+			Self_Consumption = (Math.round(result.Body.Data.Site.rel_SelfConsumption * 10))/10
+        }
         
 /*
 		[name: "power", value: Math.round(P_PV), unit: "W"]
