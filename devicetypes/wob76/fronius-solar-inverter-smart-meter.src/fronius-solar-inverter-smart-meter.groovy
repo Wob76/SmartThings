@@ -27,7 +27,10 @@ metadata {
         capability "Power Meter"
         capability "Energy Meter"
         
-        attribute "power_details", "string"
+        attribute "solar_details", "string"
+        attribute "load", "number"
+        attribute "grid", "number"
+        attribute "grid_details", "string"
 	}
 
 	simulator {
@@ -43,8 +46,8 @@ metadata {
                     [value: 5000, color: "#00a0dc"]
                 ]
             }
-            tileAttribute("device.power_details", key: "SECONDARY_CONTROL") {
-                attributeState("power_details", label:'${currentValue}', icon: "st.Appliances.appliances17", defaultState: true)
+            tileAttribute("device.solar_details", key: "SECONDARY_CONTROL") {
+                attributeState("solar_details", label:'${currentValue}', icon: "st.Appliances.appliances17", defaultState: true)
             }
         }
           
@@ -64,8 +67,8 @@ metadata {
 		standardTile("HouseTitle", "HouseTitle", width: 2, height: 1, inactiveLabel: false) {
 			state "default", label: "House"
 		}
-		valueTile("HousePower", "device.house_power", width: 2, height: 1, inactiveLabel: false) {
-			state "house_power", label:'Load\n${currentValue}W'
+		valueTile("HousePower", "device.load", width: 2, height: 1, inactiveLabel: false) {
+			state "load", label:'Load\n${currentValue}W'
 		}
 		valueTile("HouseMeter", "device.usage_meter", width: 2, height: 1, inactiveLabel: false) {
 			state "usage_meter", label:'Total\n${currentValue}'
@@ -111,7 +114,7 @@ def initialize() {
 	log.info "Fronius Inverter ${textVersion()}"
     sendEvent(name: "power", value: 0	)
     sendEvent(name: "energy", value: 0 )
-    sendEvent(name: "house_power", value: 0 )
+    sendEvent(name: "load", value: 0 )
     sendEvent(name: "grid", value: 0 )
     sendEvent(name: "YearValue", value: 0 )
     sendEvent(name: "TotalValue", value: 0 )
@@ -128,10 +131,9 @@ def initialize() {
 def parse(String description) {	
     def msg = parseLanMessage(description)
 
-    // log.info "Message: $msg"
     def result = msg.json
     
-    log.info "JSON: $result"
+    log.debug "JSON: $result"
     if (result.Head.RequestArguments.DeviceClass == "Meter") {
 		// Parse Data From Smart Meter
         
@@ -272,19 +274,19 @@ def parse(String description) {
 /*
 		[name: "power", value: Math.round(P_PV), unit: "W"]
         [name: "energy", value: (E_Day/1000), unit: "kWh"]
-        [name: "house_power", value: Math.round(P_Load), unit: "W"]
+        [name: "load", value: Math.round(P_Load), unit: "W"]
         [name: "grid", value: Math.round(P_Grid), unit: "W"]
 */
 
         sendEvent(name: "power", value: "${P_PV}", unit:P_PV_unit )
         sendEvent(name: "energy", value: "${E_Day}", unit:E_Day_unit )
-        sendEvent(name: "house_power", value: "${P_Load}", unit:P_Load_unit )
+        sendEvent(name: "load", value: "${P_Load}", unit:P_Load_unit )
         sendEvent(name: "grid", value: "${P_Grid}", unit:P_Grid_unit )
         sendEvent(name: "YearValue", value: "${E_Year}${E_Year_unit}", unit:E_Year_unit )
         sendEvent(name: "TotalValue", value: "${E_Total}${E_Total_unit}", unit:E_Total_unit )
         sendEvent(name: "autonomy", value: "${Autonomy}%", unit:"" )
 		sendEvent(name: "self_consumption", value: "${Self_Consumption}%", unit:"" )
-        sendEvent(name: 'power_details', value: "Today: ${E_Day}${E_Day_unit}\nYear: ${E_Year}${E_Year_unit}, Total: ${E_Total}${E_Total_unit}", unit:E_Year_unit, displayed: false )
+        sendEvent(name: 'solar_details', value: "Today: ${E_Day}${E_Day_unit}\nYear: ${E_Year}${E_Year_unit}, Total: ${E_Total}${E_Total_unit}", unit:"", displayed: false )
     }
 }
 
