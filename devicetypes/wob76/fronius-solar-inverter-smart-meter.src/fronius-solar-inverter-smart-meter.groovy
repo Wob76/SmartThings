@@ -37,8 +37,8 @@ metadata {
 	tiles(scale: 2) {
         
         multiAttributeTile(name:"solar", type:"generic", width:6, height:4) {
-            tileAttribute("device.solar_power", key: "PRIMARY_CONTROL") {
-                attributeState "power", label:'${currentValue}W', icon: "st.Weather.weather14", defaultState: true, backgroundColors:[
+            tileAttribute("device.power", key: "PRIMARY_CONTROL") {
+                attributeState "power", label:'Solar: ${currentValue}W', icon: "st.Weather.weather14", defaultState: true, backgroundColors:[
                     [value: 0, color: "	#cccccc"],
                     [value: 5000, color: "#00a0dc"]
                 ]
@@ -47,43 +47,41 @@ metadata {
                 attributeState("power_details", label:'${currentValue}', icon: "st.Appliances.appliances17", defaultState: true)
             }
         }
-        
-		standardTile("HouseUsage", "HouseUsage", width: 2, height: 1, inactiveLabel: false) {
-			state "default", label: "House Load"
+          
+        multiAttributeTile(name:"grid", type:"generic", width:6, height:4) {
+            tileAttribute("device.grid", key: "PRIMARY_CONTROL") {
+                attributeState "Grid", label:'Grid: ${currentValue}W', icon: "st.Home.home15", defaultState: true, backgroundColors:[
+                	[value: -4000, color: "	#44b621"],
+                    [value: 0, color: "	#cccccc"],
+                    [value: 4000, color: "#e86d13"]
+                ]
+            }
+            tileAttribute("device.grid_details", key: "SECONDARY_CONTROL") {
+                attributeState("grid_details", label:'${currentValue}', icon: "st.quirky.spotter.quirky-spotter-plugged", defaultState: true)
+            }
+        }
+
+		standardTile("HouseTitle", "HouseTitle", width: 2, height: 1, inactiveLabel: false) {
+			state "default", label: "House"
 		}
 		valueTile("HousePower", "device.house_power", width: 2, height: 1, inactiveLabel: false) {
-			state "house_power", label:'${currentValue}W'
+			state "house_power", label:'Load\n${currentValue}W'
 		}
 		valueTile("HouseMeter", "device.usage_meter", width: 2, height: 1, inactiveLabel: false) {
-			state "usage_meter", label:'${currentValue}'
+			state "usage_meter", label:'Total\n${currentValue}'
 		}
-        
+
+/*
 		standardTile("SolarUsage", "SolarUsage", width: 2, height: 1, inactiveLabel: false) {
 			state "default", label: "Solar Usage"
 		}
 		valueTile("SolarUsageNow", "device.s_usage", width: 2, height: 1, inactiveLabel: false) {
-			state "solar_power", label:'${currentValue}W'
+			state "solar_usage", label:'${currentValue}W'
 		}
 		valueTile("SolarMeter", "device.s_usage_meter", width: 2, height: 1, inactiveLabel: false) {
 			state "Solar_usage_meter", label:'${currentValue}'
 		}
-        
-        standardTile("GridPower", "GridPower", width: 2, height: 1, inactiveLabel: false) {
-			state "default", label: "Grid Usage"
-		}
-        
-        valueTile("Grid", "device.grid", width: 2, height: 1, inactiveLabel: false) {
-			state "Grid", label:'${currentValue}W'
-		}
-        
-        valueTile("Grid_Imported", "device.imported", width: 1, height: 1, inactiveLabel: false) {
-			state "Grid_Imported", label:'import\n${currentValue}'
-		}
-
-		valueTile("Grid_Exported", "device.exported", width: 1, height: 1, inactiveLabel: false) {
-			state "Grid_Exported", label:'export\n${currentValue}'
-		}
-        
+*/
 		valueTile("autonomy", "device.autonomy", width: 2, height:1 , inactiveLabel: false) {
 			state "autonomy", label:'Autonomy\n${currentValue}'
 		}
@@ -92,7 +90,7 @@ metadata {
 			state "self_consumption", label:'Self Consumption\n${currentValue}'
 		}
 
-        valueTile("solar2", "device.solar_power", decoration: "flat", inactiveLabel: false) {
+        valueTile("solar2", "device.power", decoration: "flat", inactiveLabel: false) {
 			state "solar", label:'${currentValue}', icon: "st.Weather.weather14",
             	backgroundColors:[
                     [value: 0, color: "#cccccc"],
@@ -105,13 +103,13 @@ metadata {
 		}
         
         main(["solar2"])
-		details(["solar", "HouseUsage", "HousePower", "HouseMeter", "SolarUsage", "SolarUsageNow", "SolarMeter", "GridPower", "Grid", "Grid_Imported", "Grid_Exported", "autonomy", "self_consumption", "poll"])
+		details(["solar", "grid", "HouseTitle", "HousePower", "HouseMeter", "autonomy", "self_consumption", "poll"])
 	}
 }
 
 def initialize() {
 	log.info "Fronius Inverter ${textVersion()}"
-    sendEvent(name: "solar_power", value: 0	)
+    sendEvent(name: "power", value: 0	)
     sendEvent(name: "energy", value: 0 )
     sendEvent(name: "house_power", value: 0 )
     sendEvent(name: "grid", value: 0 )
@@ -207,6 +205,7 @@ def parse(String description) {
         sendEvent(name: "exported", value: "${exported}${exported_unit}", unit:exported_unit )
 		sendEvent(name: "s_usage", value: "${SUsage}", unit:SUsage_unit )
 		sendEvent(name: "s_usage_meter", value: "${SUsage_meter}${SUsage_meter_unit}", unit:SUsage_meter_unit )
+        sendEvent(name: 'grid_details', value: "Imported: ${imported}${imported_unit}\nExported: ${exported}${exported_unit}", unit:"", displayed: false )
         
     } else {
     	// Parse Data From Inverter
@@ -271,14 +270,14 @@ def parse(String description) {
 		def Self_Consumption = (Math.round(result.Body.Data.Site.rel_SelfConsumption * 10))/10
         
 /*
-		[name: "solar_power", value: Math.round(P_PV), unit: "W"]
+		[name: "power", value: Math.round(P_PV), unit: "W"]
         [name: "energy", value: (E_Day/1000), unit: "kWh"]
         [name: "house_power", value: Math.round(P_Load), unit: "W"]
         [name: "grid", value: Math.round(P_Grid), unit: "W"]
 */
 
-        sendEvent(name: "solar_power", value: "${P_PV}", unit:P_PV_unit )
-        sendEvent(name: "energy", value: "${E_Day}${E_Day_unit}", unit:E_Year_unit )
+        sendEvent(name: "power", value: "${P_PV}", unit:P_PV_unit )
+        sendEvent(name: "energy", value: "${E_Day}", unit:E_Day_unit )
         sendEvent(name: "house_power", value: "${P_Load}", unit:P_Load_unit )
         sendEvent(name: "grid", value: "${P_Grid}", unit:P_Grid_unit )
         sendEvent(name: "YearValue", value: "${E_Year}${E_Year_unit}", unit:E_Year_unit )
