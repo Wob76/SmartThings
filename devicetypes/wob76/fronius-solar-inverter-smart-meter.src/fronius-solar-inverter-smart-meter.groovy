@@ -42,8 +42,8 @@ metadata {
         multiAttributeTile(name:"solar", type:"generic", width:6, height:4) {
             tileAttribute("device.power", key: "PRIMARY_CONTROL") {
                 attributeState "power", label:'Solar: ${currentValue}W', icon: "st.Weather.weather14", defaultState: true, backgroundColors:[
-                    [value: 0, color: "	#cccccc"],
-                    [value: 5000, color: "#00a0dc"]
+                    [value: 0, color: "	#cccccc"],	// (Grey)
+                    [value: 5000, color: "#00a0dc"]	// (Blue) Change value to make your system size.
                 ]
             }
             tileAttribute("device.solar_details", key: "SECONDARY_CONTROL") {
@@ -54,9 +54,9 @@ metadata {
         multiAttributeTile(name:"grid", type:"generic", width:6, height:4) {
             tileAttribute("device.grid", key: "PRIMARY_CONTROL") {
                 attributeState "Grid", label:'Grid: ${currentValue}W', icon: "st.Home.home15", defaultState: true, backgroundColors:[
-                	[value: -2000, color: "	#44b621"],
-                    [value: 0, color: "	#cccccc"],
-                    [value: 2000, color: "#e86d13"]
+                	[value: -2000, color: "	#44b621"],	// (Green) Change value to match your usage 
+                    [value: 0, color: "	#cccccc"],		// (Grey)
+                    [value: 2000, color: "#e86d13"]		// (Orange) Change value to match your usage\system size. 
                 ]
             }
             tileAttribute("device.grid_details", key: "SECONDARY_CONTROL") {
